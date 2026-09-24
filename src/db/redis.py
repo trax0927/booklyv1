@@ -1,9 +1,9 @@
-import aioredis
+import redis.asyncio as aioredis
 from src.config import Config
 
 JTI_EXPIRY =3600  # 1 hour in seconds
 
-token_blacklist = aioredis.StrictRedis(
+token_blacklist = aioredis.Redis(
     host=Config.REDIS_HOST,
     port=Config.REDIS_PORT,
     db=0

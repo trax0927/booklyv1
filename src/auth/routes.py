@@ -7,11 +7,12 @@ from src.db.main import get_session
 from .utils import create_access_token, decode_access_token, verify_password_hash
 from fastapi.responses import JSONResponse
 from datetime import datetime, timedelta
-from .dependencies import RefreshTokenBearer, AccessTokenBearer
+from .dependencies import RefreshTokenBearer, AccessTokenBearer, get_current_user, RoleChecker
 from src.db.redis import add_token_to_blacklist
 
 userService = UserService()
 auth_router = APIRouter()
+role_checker = RoleChecker(required_roles=["admin", "user"])
 
 REFRESH_TOKEN_EXPIRE_MINUTES = 5
 
@@ -80,7 +81,11 @@ async def get_new_access_token(token_details: dict=Depends(RefreshTokenBearer())
 
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token has expired, please login again")
 
-@auth.router.get('/logout')
+@auth_router.get('/me')
+async def get_me(user = Depends(get_current_user), _ : bool = Depends(role_checker)):
+    return user
+
+@auth_router.get('/logout')
 async def logout_user(token_details: dict=Depends(AccessTokenBearer())):
 
     jti = token_details['jti']

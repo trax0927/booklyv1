@@ -1,7 +1,13 @@
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from fastapi import HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from.utils import decode_access_token
-from src.db.redis import token_blacklist, is_token_blacklisted
+from src.db.redis import is_token_blacklisted
+from sqlmodel.ext.asyncio.session import AsyncSession
+from src.db.main import get_session
+from .service import UserService
+from typing import List
+
+userService = UserService()
 
 class TokenBearer(HTTPBearer):
 
@@ -48,3 +54,24 @@ class RefreshTokenBearer(TokenBearer):
     def verify_token_data(self, token_data: dict) -> None:
         if token_data and not token_data['refresh']:
             raise HTTPException(status_code=403, detail="Provide a refresh token")
+
+async def get_current_user(
+        token_details: dict = Depends(AccessTokenBearer()),
+        session: AsyncSession = Depends(get_session)
+        ):
+
+    user_email = token_details['user']['email']
+
+    user = await userService.get_user_by_email(user_email, session)
+
+    return user
+
+class RoleChecker:
+    def __init__(self, required_roles: List[str]) -> None:
+        self.required_roles = required_roles
+
+    async def __call__(self, current_user = Depends(get_current_user)):
+        if current_user.role in self.required_roles:
+            return True
+
+        raise HTTPException(status_code=403, detail="You do not have permission to access this resource")
