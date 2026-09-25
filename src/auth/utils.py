@@ -1,5 +1,5 @@
 from passlib.context import CryptContext
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from fastapi.encoders import jsonable_encoder
 from src.config import Config
 import jwt
@@ -23,7 +23,7 @@ def create_access_token(user_data: dict, expiry: timedelta = None, refresh: bool
     payload = {}
 
     payload["user"] = user_data
-    payload["exp"] = datetime.now() + (expiry if expiry is not None else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    payload["exp"] = datetime.now(timezone.utc) + (expiry if expiry is not None else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     payload["jti"] = str(uuid.uuid4())
     payload["refresh"] = refresh
 
@@ -37,7 +37,7 @@ def create_access_token(user_data: dict, expiry: timedelta = None, refresh: bool
     return token
 
 
-def decode_access_token(token: str) -> dict:
+def decode_access_token(token: str) -> dict | None:
     try:
         token_data = jwt.decode(
             jwt=token,
@@ -49,6 +49,6 @@ def decode_access_token(token: str) -> dict:
 
     except jwt.PyJWTError as e:
         logging.error(f"Error decoding JWT token: {e}")
-        raise ValueError("Invalid token")
+        return None
 
     

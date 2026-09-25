@@ -6,7 +6,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.main import get_session
 from .utils import create_access_token, decode_access_token, verify_password_hash
 from fastapi.responses import JSONResponse
-from datetime import datetime, timedelta
+from datetime import timedelta
 from .dependencies import RefreshTokenBearer, AccessTokenBearer, get_current_user, RoleChecker
 from src.db.redis import add_token_to_blacklist
 
@@ -66,22 +66,17 @@ async def login_user(user_data: UserLoginModel, session: AsyncSession = Depends(
 
 @auth_router.get('/refresh_token')
 async def get_new_access_token(token_details: dict=Depends(RefreshTokenBearer())):
-    expiry_timestamp = token_details['exp']
-
-    if datetime.fromtimestamp(expiry_timestamp) >  datetime.now():
-        new_access_token = create_access_token(
-            user_data=token_details['user'],
-            )
-        return JSONResponse(
-            content={
-                "message": "New access token generated",
-                "access_token": new_access_token
-            }
+    new_access_token = create_access_token(
+        user_data=token_details['user'],
         )
+    return JSONResponse(
+        content={
+            "message": "New access token generated",
+            "access_token": new_access_token
+        }
+    )
 
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token has expired, please login again")
-
-@auth_router.get('/me')
+@auth_router.get('/me', response_model=UserModel)
 async def get_me(user = Depends(get_current_user), _ : bool = Depends(role_checker)):
     return user
 

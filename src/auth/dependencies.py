@@ -21,8 +21,8 @@ class TokenBearer(HTTPBearer):
 
         token_data = decode_access_token(token)
 
-        if not self.verify_token(token):
-            raise HTTPException(status_code=403, detail="Invalid or expired token, please get a new token")
+        if token_data is None:
+            raise HTTPException(status_code=401, detail="Invalid or expired token, please get a new token")
 
         if await is_token_blacklisted(token_data['jti']):
             raise HTTPException(status_code=403, detail="Token has been revoked, please get a new token")
@@ -32,14 +32,6 @@ class TokenBearer(HTTPBearer):
 
 
         return token_data
-
-    def verify_token(self, token: str) -> bool:
-
-        token_data = decode_access_token(token)
-
-        if token_data is None:
-            return False
-        return True
 
     def verify_token_data(self, token_data):
         raise NotImplementedError("Subclasses must implement the verify_token_data method.")
