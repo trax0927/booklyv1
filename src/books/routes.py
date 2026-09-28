@@ -4,7 +4,7 @@ from src.books.schemas import Book, UpdateBookModel, BookCreateModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.main import get_session
 from .service import BookService
-from .models import Book
+from src.db.models import Book
 from typing import List
 from src.auth.dependencies import AccessTokenBearer, RoleChecker
 
