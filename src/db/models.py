@@ -71,7 +71,7 @@ class Review(SQLModel, table=True):
     book_uid: uuid.UUID = Field(default=None, foreign_key="books.uid")
     user_uid: uuid.UUID = Field(default=None, foreign_key="users.uid")
     rating: float = Field(lt=10.0, gt=0.0)
-    comment: str
+    comment: str = Field(sa_column=Column(pg.VARCHAR, nullable=False))
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now, nullable=False))
     update_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now, nullable=False))
     user: Optional["User"] = Relationship(back_populates="reviews")

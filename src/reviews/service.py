@@ -1,4 +1,5 @@
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import select, desc
 from src.db.models import Review
 from .schema import ReviewCreateModel
 from src.auth.service import UserService
@@ -38,5 +39,33 @@ class ReviewService:
             raise HTTPException(status_code=500, detail=f"An error occurred while adding the review: {str(e)}")
 
 
+    async def get_all_user_reviews(self, user_uid: str, session: AsyncSession):
+        statement = select(Review).where(Review.user_uid == user_uid).order_by(desc(Review.created_at))
+        result = await session.exec(statement)
+        reviews = result.all()
+        return reviews
+
+
     async def get_all_reviews(self, session: AsyncSession):
-        pass
+        statement = select(Review).order_by(desc(Review.created_at))
+        result = await session.exec(statement)
+        reviews = result.all()
+        return reviews
+
+
+    async def get_review_by_uid(self, review_uid: str, session: AsyncSession):
+        statement = select(Review).where(Review.uid == review_uid)
+        result = await session.exec(statement)
+        return result.first()
+
+
+    async def delete_review(self, review_uid: str, session: AsyncSession):
+        statement = select(Review).where(Review.uid == review_uid)
+        result = await session.exec(statement)
+        review_to_delete = result.first()
+
+        if review_to_delete is None:
+            return None
+        
+        await session.delete(review_to_delete)
+        await session.commit()
