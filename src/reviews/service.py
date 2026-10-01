@@ -1,3 +1,5 @@
+import logging
+
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, desc
 from src.db.models import Review
@@ -5,7 +7,7 @@ from .schema import ReviewCreateModel
 from src.auth.service import UserService
 from src.books.service import BookService
 from fastapi import HTTPException, status
-import logging
+
 
 book_service = BookService()
 user_service = UserService()
@@ -59,13 +61,17 @@ class ReviewService:
         return result.first()
 
 
-    async def delete_review(self, review_uid: str, session: AsyncSession):
-        statement = select(Review).where(Review.uid == review_uid)
-        result = await session.exec(statement)
-        review_to_delete = result.first()
+    async def delete_review(self, review_uid: str, user_email: str, session: AsyncSession):
 
-        if review_to_delete is None:
-            return None
+        user = await user_service.get_user_by_email(user_email, session)
+
+        review_to_delete = await self.get_review_by_uid(review_uid, session)
+        
+        if review_to_delete is None or review_to_delete.user != user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Review not found or you do not have permission to delete this review"
+            )
         
         await session.delete(review_to_delete)
         await session.commit()
