@@ -56,6 +56,8 @@ class BookService:
         await session.delete(book_to_delete)
         await session.commit()
 
+        return True
+
     async def get_user_books(self, user_uid: str, session: AsyncSession):
         statement = select(Book).where(Book.user_uid == user_uid).order_by(desc(Book.created_at))
         result = await session.exec(statement)
