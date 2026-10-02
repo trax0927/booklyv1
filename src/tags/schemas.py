@@ -4,7 +4,6 @@ from datetime import datetime
 
 class TagModel(BaseModel):
     uid: uuid.UUID
-    book_uid: uuid.UUID
     name: str
     created_at: datetime
 

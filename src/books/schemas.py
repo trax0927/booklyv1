@@ -17,6 +17,7 @@ class Book(BaseModel):
 
 class BookDetailModel(Book):
     reviews: List[ReviewModel]
+    tags: List[TagModel]
 
 class BookCreateModel(BaseModel):
     title: str

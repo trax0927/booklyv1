@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, desc
 from src.db.models import Tag
-from .schemas import TagCreateModel, TagAddModel, TagModel
+from .schemas import TagCreateModel, TagAddModel
 
 from src.books.service import BookService
 
@@ -42,7 +42,7 @@ class TagsService:
 
         return result.first()
 
-    async def add_tag_to_book(self, book_uid: str, tag_data: TagAddModel, session: AsyncSession):
+    async def add_tags_to_book(self, book_uid: str, tag_data: TagAddModel, session: AsyncSession):
 
         book = await book_service.get_book(book_uid, session)
         if not book:
