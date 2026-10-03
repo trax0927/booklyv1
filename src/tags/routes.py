@@ -13,6 +13,7 @@ from .service import TagsService
 tags_router = APIRouter()
 tags_service = TagsService()
 user_role_check = Depends(RoleChecker(["user", "admin"]))
+admin_role_check = Depends(RoleChecker(["admin"]))
 
 @tags_router.get("/", response_model=List[TagModel], dependencies=[user_role_check])
 async def get_all_tags(session: AsyncSession = Depends(get_session)):
@@ -21,7 +22,7 @@ async def get_all_tags(session: AsyncSession = Depends(get_session)):
     
     return tags
 
-@tags_router.post("/", response_model=TagModel, dependencies=[user_role_check])
+@tags_router.post("/", response_model=TagModel, dependencies=[admin_role_check])
 async def create_a_tag(tag_data: TagCreateModel, session: AsyncSession = Depends(get_session)):
     
     tag = await tags_service.create_tag(tag_data, session)
@@ -35,14 +36,14 @@ async def add_tags_to_book(book_uid: str, tag_data: TagAddModel, session: AsyncS
     
     return book_with_tags
 
-@tags_router.patch("/{tag_uid}", response_model=TagModel, dependencies=[user_role_check])
+@tags_router.patch("/{tag_uid}", response_model=TagModel, dependencies=[admin_role_check])
 async def update_a_tag(tag_uid: str, tag_data: TagCreateModel, session: AsyncSession = Depends(get_session)):
     
     updated_tag = await tags_service.update_tag(tag_uid, tag_data, session)
     
     return updated_tag
 
-@tags_router.delete("/{tag_uid}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[user_role_check])
+@tags_router.delete("/{tag_uid}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[admin_role_check])
 async def delete_tag(tag_uid: str, session: AsyncSession = Depends(get_session)):
     
     deleted_tag = await tags_service.delete_tag(tag_uid, session)

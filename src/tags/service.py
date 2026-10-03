@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select, desc
+from sqlmodel import select, desc, func
 from src.db.models import Tag
 from .schemas import TagCreateModel, TagAddModel
 
@@ -21,14 +21,14 @@ class TagsService:
 
     async def create_tag(self, tag_data: TagCreateModel, session: AsyncSession):
 
-        statement = select(Tag).where(Tag.name == tag_data.name)
+        statement = select(Tag).where(func.lower(Tag.name) == tag_data.name.strip().lower())
         result = await session.exec(statement)
 
         tag = result.first()
         if tag:
             raise HTTPException(status_code=400, detail="Tag already exists")
 
-        new_tag = Tag(name=tag_data.name)
+        new_tag = Tag(name=tag_data.name.strip())
 
         session.add(new_tag)
         await session.commit()
@@ -49,14 +49,15 @@ class TagsService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
 
         for tag_info in tag_data.tags:
-            statement = select(Tag).where(Tag.name == tag_info.name)
+            statement = select(Tag).where(func.lower(Tag.name) == tag_info.name.strip().lower())
             result = await session.exec(statement)
             tag = result.one_or_none()
 
             if not tag:
-                tag = Tag(name=tag_info.name)
-            
-            book.tags.append(tag)
+                tag = Tag(name=tag_info.name.strip())
+
+            if tag not in book.tags:
+                book.tags.append(tag)
 
         session.add(book)
         await session.commit()
