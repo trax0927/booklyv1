@@ -1,14 +1,19 @@
 from fastapi import APIRouter, status, Depends
 from fastapi.exceptions import HTTPException
+from fastapi.responses import JSONResponse
+
 from .schemas import UserCreateModel, UserModel, UserLoginModel, UserBooksModel
 from .service import UserService
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.main import get_session
-from .utils import create_access_token, decode_access_token, verify_password_hash
-from fastapi.responses import JSONResponse
-from datetime import timedelta
-from .dependencies import RefreshTokenBearer, AccessTokenBearer, get_current_user, RoleChecker
+from src.errors import InvalidCredentials, UserAlreadyExists, UserNotFound
+
 from src.db.redis import add_token_to_blacklist
+from .utils import create_access_token, decode_access_token, verify_password_hash
+from .dependencies import RefreshTokenBearer, AccessTokenBearer, get_current_user, RoleChecker
+
+from datetime import timedelta
+
 
 userService = UserService()
 auth_router = APIRouter()
@@ -29,7 +34,7 @@ async def register_user(
 
     user_exits = await userService.user_exists(email, session)
     if user_exits:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User with email already exists")
+        raise UserAlreadyExists()
 
     new_user = await userService.create_user(user_data, session)
 
@@ -62,7 +67,7 @@ async def login_user(user_data: UserLoginModel, session: AsyncSession = Depends(
                 }
             )
 
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    raise InvalidCredentials()
 
 @auth_router.get('/refresh_token')
 async def get_new_access_token(token_details: dict=Depends(RefreshTokenBearer())):

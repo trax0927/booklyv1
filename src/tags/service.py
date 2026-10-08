@@ -6,6 +6,7 @@ from src.db.models import Tag
 from .schemas import TagCreateModel, TagAddModel
 
 from src.books.service import BookService
+from src.errors import TagNotFound, BookNotFound, TagAlreadyExist
 
 book_service = BookService()
 
@@ -26,7 +27,7 @@ class TagsService:
 
         tag = result.first()
         if tag:
-            raise HTTPException(status_code=400, detail="Tag already exists")
+            raise TagAlreadyExist()
 
         new_tag = Tag(name=tag_data.name.strip())
 
@@ -46,7 +47,7 @@ class TagsService:
 
         book = await book_service.get_book(book_uid, session)
         if not book:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
+            raise BookNotFound()
 
         for tag_info in tag_data.tags:
             statement = select(Tag).where(func.lower(Tag.name) == tag_info.name.strip().lower())
@@ -73,7 +74,7 @@ class TagsService:
         tag_to_update = result.first()
 
         if not tag_to_update:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found")
+            raise TagNotFound()
 
         tag_to_update.name = tag_data.name
 
@@ -87,7 +88,7 @@ class TagsService:
         tag_to_delete = await self.get_tag_by_uid(tag_uid, session)
 
         if tag_to_delete is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found")
+            raise TagNotFound()
 
         await session.delete(tag_to_delete)
         await session.commit()

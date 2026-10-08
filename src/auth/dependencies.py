@@ -4,6 +4,13 @@ from.utils import decode_access_token
 from src.db.redis import is_token_blacklisted
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.main import get_session
+from src.errors import (
+    InvalidTokenError,
+    RefreshTokenRequired,
+    AccessTokenRequired,
+    InsufficientPermissions,
+    RevokedToken
+)
 from .service import UserService
 from typing import List
 
@@ -22,10 +29,10 @@ class TokenBearer(HTTPBearer):
         token_data = decode_access_token(token)
 
         if token_data is None:
-            raise HTTPException(status_code=401, detail="Invalid or expired token, please get a new token")
+            raise InvalidTokenError()
 
         if await is_token_blacklisted(token_data['jti']):
-            raise HTTPException(status_code=403, detail="Token has been revoked, please get a new token")
+            raise RevokedToken()
 
 
         self.verify_token_data(token_data)
@@ -40,12 +47,12 @@ class TokenBearer(HTTPBearer):
 class AccessTokenBearer(TokenBearer):
     def verify_token_data(self, token_data: dict) -> None:
         if token_data and token_data['refresh']:
-            raise HTTPException(status_code=403, detail="Provide an access token")
+            raise AccessTokenRequired()
 
 class RefreshTokenBearer(TokenBearer):
     def verify_token_data(self, token_data: dict) -> None:
         if token_data and not token_data['refresh']:
-            raise HTTPException(status_code=403, detail="Provide a refresh token")
+            raise RefreshTokenRequired()
 
 async def get_current_user(
         token_details: dict = Depends(AccessTokenBearer()),
@@ -66,4 +73,4 @@ class RoleChecker:
         if current_user.role in self.required_roles:
             return True
 
-        raise HTTPException(status_code=403, detail="You do not have permission to access this resource")
+        raise InsufficientPermissions()
