@@ -9,7 +9,6 @@ from sqlalchemy.orm import sessionmaker
 
 async_engine = create_async_engine(
     url=Config.DATABASE_URL,
-    echo=True,
     future=True,
 )
 
