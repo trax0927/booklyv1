@@ -2,6 +2,7 @@ from passlib.context import CryptContext
 from datetime import timedelta, datetime, timezone
 from fastapi.encoders import jsonable_encoder
 from src.config import Config
+from itsdangerous import URLSafeTimedSerializer
 import jwt
 import uuid
 import logging
@@ -51,4 +52,18 @@ def decode_access_token(token: str) -> dict | None:
         logging.error(f"Error decoding JWT token: {e}")
         return None
 
+serializer = URLSafeTimedSerializer(Config.JWT_SECRET_KEY, salt="email-verification")
+
+def create_safe_url_token(data: dict):
     
+    token = serializer.dumps(data)
+    return token
+
+def decode_safe_url_token(token:str):
+    try:
+        token_data = serializer.loads(token)
+
+        return token_data
+    except Exception as e:
+        logging.error(f"Error decoding safe URL token: {e}")
+        return None

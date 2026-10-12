@@ -30,3 +30,6 @@ class UserBooksModel(UserModel):
 class UserLoginModel(BaseModel):
     email: str = Field(min_length=10)
     password: str = Field(min_length=6)
+
+class EmailModel(BaseModel):
+    addresses: List[str]

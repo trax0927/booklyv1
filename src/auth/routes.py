@@ -2,15 +2,17 @@ from fastapi import APIRouter, status, Depends
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 
-from .schemas import UserCreateModel, UserModel, UserLoginModel, UserBooksModel
+from .schemas import UserCreateModel, UserModel, UserLoginModel, UserBooksModel, EmailModel
 from .service import UserService
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.main import get_session
 from src.errors import InvalidCredentials, UserAlreadyExists, UserNotFound
 
 from src.db.redis import add_token_to_blacklist
-from .utils import create_access_token, decode_access_token, verify_password_hash
+from .utils import create_access_token, decode_access_token, verify_password_hash, create_safe_url_token, decode_safe_url_token
 from .dependencies import RefreshTokenBearer, AccessTokenBearer, get_current_user, RoleChecker
+from src.mail import mail, create_email_message
+from src.config import Config
 
 from datetime import timedelta
 
@@ -21,9 +23,47 @@ role_checker = RoleChecker(required_roles=["admin", "user"])
 
 REFRESH_TOKEN_EXPIRE_MINUTES = 5
 
+@auth_router.post("/send_email")
+async def send_email(emails:EmailModel):
+
+    emails = emails.addresses
+
+    html = "<h1>Welcome to Bookly</h1><p>Thank you for registering with us. We are excited to have you on board!</p>"
+
+    message = create_email_message(
+        recipients=emails,
+        subject="Welcome to Bookly",
+        body=html
+    )
+
+    await mail.send_message(message)
+
+    return {"message": "Email sent successfully"}
+
+@auth_router.get('/verify_email/{token}')
+async def verify_email(token: str, session: AsyncSession = Depends(get_session)):
+
+    payload = decode_safe_url_token(token)
+    email = payload.get('email')
+
+    if email:
+        user = await userService.get_user_by_email(email, session)
+        if not user:
+            raise UserNotFound()
+
+        await userService.update_user(user, {"is_verified": True}, session)
+        return JSONResponse(
+            content={"message": "Account verified successfully"},
+            status_code=status.HTTP_200_OK
+            )
+
+    return JSONResponse(
+        content={"message": "Error occured during verification"},
+        status_code=status.HTTP_400_BAD_REQUEST
+        )
+
 @auth_router.post(
         '/register',
-        response_model=UserModel,
         status_code=status.HTTP_201_CREATED
         )
 async def register_user(
@@ -38,7 +78,26 @@ async def register_user(
 
     new_user = await userService.create_user(user_data, session)
 
-    return new_user
+    token = create_safe_url_token({'email': email})
+
+    html_message = f"""
+    <h1>Verify your Email</h1>
+    <p>Please click the link below to verify your email address:</p>
+    <a href="http://{Config.DOMAIN_NAME}/api/v1/auth/verify_email/{token}">Verify Email</a>
+    """
+
+    message = create_email_message(
+    recipients=[email],
+    subject="Verify your Email",
+    body=html_message
+    )
+
+    await mail.send_message(message)
+
+    return {
+        "message": "User registered successfully. Please check your email to verify your account.",
+        "user": new_user
+    }
 
 @auth_router.post('/login')
 async def login_user(user_data: UserLoginModel, session: AsyncSession = Depends(get_session)):
