@@ -51,6 +51,10 @@ class UserNotFound(BooklyException):
     """User not found."""
     pass
 
+class AccountNotVerified(BooklyException):
+    """User has not verified their email address."""
+    pass
+
 def create_exception_handler(status_code: int, initial_detail: Any) -> Callable[[Request, BooklyException], JSONResponse]:
 
     async def exception_handler(request: Request, exc: BooklyException) -> JSONResponse:
@@ -177,7 +181,18 @@ def register_exception_handlers(app: FastAPI) -> None:
                 }
             )
         )
-
+        app.add_exception_handler(
+            AccountNotVerified,
+            create_exception_handler(
+                status_code=400,
+                initial_detail={
+                    "message": "Account not verified",
+                    "resolution": "Verify your email address",
+                    "error_code": "ACCOUNT_NOT_VERIFIED"
+                }
+            )
+        )
+    
         @app.exception_handler(500)
         async def internal_server_error_handler(request, exc):
             return JSONResponse(

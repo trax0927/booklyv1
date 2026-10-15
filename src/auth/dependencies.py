@@ -9,7 +9,8 @@ from src.errors import (
     RefreshTokenRequired,
     AccessTokenRequired,
     InsufficientPermissions,
-    RevokedToken
+    RevokedToken,
+    AccountNotVerified
 )
 from .service import UserService
 from typing import List
@@ -70,6 +71,9 @@ class RoleChecker:
         self.required_roles = required_roles
 
     async def __call__(self, current_user = Depends(get_current_user)):
+        if current_user.is_verified is False:
+            raise AccountNotVerified()
+
         if current_user.role in self.required_roles:
             return True
 
