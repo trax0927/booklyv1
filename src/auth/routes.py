@@ -53,7 +53,7 @@ async def send_mail(emails:EmailModel):
 async def verify_email(token: str, session: AsyncSession = Depends(get_session)):
 
     payload = decode_safe_url_token(token)
-    email = payload.get('email')
+    email = payload.get('email') if payload else None
 
     if email:
         user = await userService.get_user_by_email(email, session)
@@ -166,7 +166,7 @@ async def logout_user(token_details: dict=Depends(AccessTokenBearer())):
 async def reset_password(token: str, password_data: PasswordResetConfirmModel, session: AsyncSession = Depends(get_session)):
 
     payload = decode_safe_url_token(token)
-    email = payload.get('email')
+    email = payload.get('email') if payload else None
 
     if email:
         user = await userService.get_user_by_email(email, session)
