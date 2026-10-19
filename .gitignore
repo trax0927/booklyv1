@@ -2,3 +2,6 @@ env/
 __pycache__
 .env
 .claude
+.pytest_cache
+.hypothesis
+.schemathesis
