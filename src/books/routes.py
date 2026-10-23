@@ -35,7 +35,7 @@ async def create_book(book_data:BookCreateModel, session:AsyncSession = Depends(
     return new_book
     
 @book_router.get('/{book_uid}', response_model=BookDetailModel, dependencies=[Depends(role_checker)])
-async def get_books(book_uid:str, session:AsyncSession = Depends(get_session), _: dict =Depends(accessToken_bearer)) -> dict:
+async def get_book_by_id(book_uid:str, session:AsyncSession = Depends(get_session), _: dict =Depends(accessToken_bearer)) -> dict:
     book = await book_service.get_book(book_uid, session)
     if book:
         return book 

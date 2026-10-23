@@ -93,7 +93,7 @@ async def register_user(
     html = f"""
     <h1>Verify your Email</h1>
     <p>Please click the link below to verify your email address:</p>
-    <a href="http://{Config.DOMAIN_NAME}/api/v1/auth/verify_email/{token}">Verify Email</a>
+    <a href="https://{Config.DOMAIN_NAME}/api/v1/auth/verify_email/{token}">Verify Email</a>
     """
     emails = [email]
     subject = "Verify your Email"
@@ -208,7 +208,7 @@ async def reset_password_request(email_data: PasswordResetModel, session: AsyncS
     html_message = f"""
     <h1>Reset your Password</h1>
     <p>Please click the link below to reset your password:</p>
-    <a href="http://{Config.DOMAIN_NAME}/api/v1/auth/reset_password/{token}">Reset Password</a>
+    <a href="https://{Config.DOMAIN_NAME}/api/v1/auth/reset_password/{token}">Reset Password</a>
     """
 
     send_email.delay([email], "Reset your Password", html_message)

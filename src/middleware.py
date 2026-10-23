@@ -3,6 +3,7 @@ from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware 
+from src.config import Config
 import time
 import logging
 
@@ -36,7 +37,7 @@ def register_middleware(app: FastAPI) -> None:
 
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["localhost", "127.0.0.1"]
+        allowed_hosts=Config.ALLOWED_HOSTS
     )
 
 
