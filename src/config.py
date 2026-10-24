@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     USE_CREDENTIALS:bool =True
     VALIDATE_CERTS:bool =True
     DOMAIN_NAME: str
-    ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1", "testser"]
+    ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1", "testserver", "booklyv1.onrender.com"]
 
     model_config = SettingsConfigDict(
         env_file=".env",
