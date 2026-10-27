@@ -11,14 +11,15 @@ from .middleware import register_middleware
 
 
 version = "v1"
+version_prefix = f"/api/{version}"
 
 app = FastAPI(
     title="Bookly",
     description="A rest API for a book review web access",
     version=version,
-    openapi_url=f"/api/{version}/openapi.json",
-    docs_url=f"/api/{version}/docs",
-    redoc_url=f"/api/{version}/redoc",    
+    openapi_url=f"{version_prefix}/openapi.json",
+    docs_url=f"{version_prefix}/docs",
+    redoc_url=f"{version_prefix}/redoc",    
     contact={
         "name": "Adenmosun Paul",
         "email":"adenmosunpaulo@gmail.com" 
