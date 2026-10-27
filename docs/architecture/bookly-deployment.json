@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Bookly Backend on Render",
+    "output": "docs/architecture/bookly-deployment.html",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/trax0927/booklyv1.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "a8b47897331bf5482a00f8594454afbefc163054"
+    }
+  },
+  "components": [
+    { "id": "client", "type": "external", "label": "API Client", "sublabel": "browser / Swagger UI", "pos": [40, 40], "size": [120, 60] },
+    { "id": "middleware", "type": "security", "label": "Middleware", "sublabel": "TrustedHost · CORS", "pos": [220, 40], "size": [140, 60],
+      "sources": [ { "path": "src/middleware.py", "line": 15, "end_line": 41, "label": "logging, CORS, trusted hosts" } ] },
+    { "id": "authdeps", "type": "security", "label": "Auth dependencies", "sublabel": "JWT bearer · RoleChecker", "pos": [450, 40], "size": [150, 60],
+      "sources": [
+        { "path": "src/auth/dependencies.py", "line": 20, "end_line": 35, "label": "token bearer + blacklist check" },
+        { "path": "src/auth/dependencies.py", "line": 69, "end_line": 77, "label": "RoleChecker" }
+      ] },
+    { "id": "routers", "type": "backend", "label": "API routers", "sublabel": "auth/books/reviews/tags", "pos": [680, 40], "size": [140, 60],
+      "sources": [
+        { "path": "src/__init__.py", "line": 31, "end_line": 34, "label": "routers under /api/v1" },
+        { "path": "src/auth/routes.py", "line": 197, "end_line": 214, "label": "reset request enqueues email" },
+        { "path": "src/auth/routes.py", "line": 153, "end_line": 157, "label": "logout blacklists jti" }
+      ] },
+    { "id": "services", "type": "backend", "label": "Service layer", "sublabel": "async SQLModel", "pos": [890, 40], "size": [130, 60],
+      "sources": [
+        { "path": "src/books/service.py", "line": 7, "end_line": 26, "label": "BookService" },
+        { "path": "src/reviews/service.py", "line": 15, "end_line": 17, "label": "ReviewService" },
+        { "path": "src/tags/service.py", "line": 13, "end_line": 23, "label": "TagsService" }
+      ] },
+    { "id": "postgres", "type": "database", "label": "Supabase Postgres", "sublabel": "session pooler", "pos": [1100, 40], "size": [140, 60],
+      "sources": [
+        { "path": "src/db/main.py", "line": 10, "end_line": 29, "label": "async engine + sessions" },
+        { "path": "migrations/env.py", "line": 67, "end_line": 80, "label": "async Alembic migrations" }
+      ] },
+    { "id": "redis", "type": "database", "label": "Render Key Value", "sublabel": "Redis: jti + task queue", "pos": [450, 210], "size": [150, 62],
+      "sources": [
+        { "path": "src/db/redis.py", "line": 1, "end_line": 13, "label": "token blacklist" },
+        { "path": "src/config.py", "line": 29, "end_line": 31, "label": "Celery broker + results" }
+      ] },
+    { "id": "worker", "type": "backend", "label": "Celery worker", "sublabel": "same Render instance", "pos": [450, 370], "size": [150, 60],
+      "sources": [ { "path": "src/celery_tasks.py", "line": 5, "end_line": 19, "label": "send_email task" } ] },
+    { "id": "smtp", "type": "external", "label": "Brevo SMTP", "sublabel": "smtp-relay :2525", "pos": [450, 530], "size": [150, 60],
+      "sources": [ { "path": "src/mail.py", "line": 7, "end_line": 22, "label": "SMTP settings from env" } ] },
+    { "id": "inbox", "type": "external", "label": "User inbox", "sublabel": "verify / reset links", "pos": [700, 530], "size": [130, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Render · Frankfurt (free plan)", "wraps": ["middleware", "authdeps", "routers", "services", "redis", "worker"], "pad": 20 },
+    { "kind": "region", "label": "Supabase · eu-west-1", "wraps": ["postgres"], "pad": 16 }
+  ],
+  "connections": [
+    { "from": "client", "to": "middleware", "label": "HTTPS", "variant": "emphasis" },
+    { "from": "middleware", "to": "authdeps", "label": "allowed", "variant": "emphasis" },
+    { "from": "authdeps", "to": "routers", "label": "role ok", "variant": "emphasis" },
+    { "from": "routers", "to": "services", "label": "calls", "variant": "emphasis" },
+    { "from": "services", "to": "postgres", "label": "asyncpg", "variant": "emphasis" },
+    { "from": "authdeps", "to": "redis", "label": "jti lookup", "variant": "security" },
+    { "from": "routers", "to": "redis", "label": "enqueue + logout jti", "variant": "dashed", "fromSide": "bottom", "toSide": "right" },
+    { "from": "redis", "to": "worker", "label": "consume task", "variant": "dashed" },
+    { "from": "worker", "to": "smtp", "label": "SMTP", "variant": "dashed" },
+    { "from": "smtp", "to": "inbox", "label": "email", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "rose", "title": "Request checks", "items": ["TrustedHostMiddleware rejects unknown hosts with 400", "Bearer tokens are rejected if their jti is blacklisted in Redis", "RoleChecker allows user, admin or both per route"] },
+    { "dot": "amber", "title": "Async email", "items": ["Verify and reset routes call send_email.delay and return immediately", "The Celery worker runs beside uvicorn in the same web service", "Render free blocks SMTP ports 25/465/587, so mail goes out on 2525"] },
+    { "dot": "cyan", "title": "Deployment (from Render config, not the repo)", "items": ["Start command: alembic upgrade head, then Celery + uvicorn", "Database is Supabase via its session pooler, not Render Postgres", "Auto-deploys on every push to main"] }
+  ]
+}

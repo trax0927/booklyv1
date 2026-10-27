@@ -5,3 +5,6 @@ __pycache__
 .pytest_cache
 .hypothesis
 .schemathesis
+# Archify scratch output and delivery receipts
+.archify/
+*.delivery.json

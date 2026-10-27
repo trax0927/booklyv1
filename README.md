@@ -4,6 +4,8 @@ A REST API for a book review platform. Users sign up, verify their email, and ma
 
 Live docs: https://booklyv1.onrender.com/api/v1/docs
 
+Architecture diagram: [`docs/architecture/bookly-deployment.html`](docs/architecture/bookly-deployment.html) (download and open in a browser; its source is `bookly-deployment.json` in the same folder)
+
 ## Features
 
 - **Books** – create, list, update and delete books; list the books a user has added
