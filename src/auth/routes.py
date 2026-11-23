@@ -35,7 +35,7 @@ userService = UserService()
 auth_router = APIRouter()
 role_checker = RoleChecker(required_roles=["admin", "user"])
 
-REFRESH_TOKEN_EXPIRE_MINUTES = 5
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 @auth_router.post("/send_email")
 async def send_mail(emails:EmailModel):
@@ -116,7 +116,7 @@ async def login_user(user_data: UserLoginModel, session: AsyncSession = Depends(
             access_token = create_access_token(user_data_dict)
             refresh_token = create_access_token(
                 user_data_dict,
-                timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES),
+                timedelta(minutes=REFRESH_TOKEN_EXPIRE_DAYS),
                 refresh=True,
             )
 
